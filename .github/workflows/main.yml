@@ -16,7 +16,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-pip openjdk-11-jdk wget unzip git zlib1g-dev
 
-      - name: Setup Android SDK and NDK
+      - name: Setup Android SDK
         run: |
           # Setup Android SDK
           mkdir -p ~/android-sdk/cmdline-tools
@@ -26,18 +26,19 @@ jobs:
           
           # Accept licenses and install components
           yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk --licenses
-          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk "platform-tools" "build-tools;36.0.0" "platforms;android-33" "ndk;23b"
+          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk "platform-tools" "build-tools;36.0.0" "platforms;android-33" "ndk;25.2.9519653"
           
           echo "export ANDROID_SDK_ROOT=~/android-sdk" >> $GITHUB_ENV
-          echo "export ANDROID_NDK_HOME=~/android-sdk/ndk/23b" >> $GITHUB_ENV
+          echo "export ANDROID_NDK_HOME=~/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
           echo "export PATH=$PATH:~/android-sdk/cmdline-tools/latest/bin:~/android-sdk/platform-tools" >> $GITHUB_ENV
 
-      - name: Install Buildozer and dependencies
+      - name: Install Buildozer and configure
         run: |
           pip install buildozer cython==0.29.33
           buildozer init
-          sed -i "s|#android.ndk = .*|android.ndk = 23b|" buildozer.spec
+          sed -i "s|#android.ndk = .*|android.ndk = 25.2.9519653|" buildozer.spec
           sed -i "s|#android.sdk_path = .*|android.sdk_path = /home/runner/android-sdk|" buildozer.spec
+          sed -i "s|#android.ndk_path = .*|android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653|" buildozer.spec
 
       - name: Build APK
         run: |
