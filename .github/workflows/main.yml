@@ -14,15 +14,17 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip openjdk-11-jdk wget unzip git zlib1g-dev
+          sudo apt-get install -y python3-pip openjdk-11-jdk wget unzip git zlib1g-dev libssl-dev
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK and NDK
         run: |
+          # Setup Android SDK
           mkdir -p ~/android-sdk/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
           unzip cmdline-tools.zip -d ~/android-sdk/cmdline-tools
           mv ~/android-sdk/cmdline-tools/cmdline-tools ~/android-sdk/cmdline-tools/latest
           
+          # Accept licenses and install components
           yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk --licenses
           ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk "platform-tools" "build-tools;36.0.0" "platforms;android-33" "ndk;25.2.9519653"
           
@@ -30,15 +32,18 @@ jobs:
           echo "export ANDROID_NDK_HOME=~/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
           echo "export PATH=$PATH:~/android-sdk/cmdline-tools/latest/bin:~/android-sdk/platform-tools" >> $GITHUB_ENV
 
-      - name: Install Buildozer and configure
+      - name: Install Buildozer and python-for-android
         run: |
           pip install buildozer cython==0.29.33
-          if [ ! -f buildozer.spec ]; then
-            buildozer init
-          fi
+          git clone https://github.com/kivy/python-for-android.git
+          cd python-for-android
+          pip install .
+          cd ..
+          buildozer android init
           sed -i "s|#android.ndk = .*|android.ndk = 25.2.9519653|" buildozer.spec
           sed -i "s|#android.sdk_path = .*|android.sdk_path = /home/runner/android-sdk|" buildozer.spec
           sed -i "s|#android.ndk_path = .*|android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653|" buildozer.spec
+          sed -i "s|#p4a.source_dir = .*|p4a.source_dir = /home/runner/work/waiter-dashboard-apk/waiter-dashboard-apk/python-for-android|" buildozer.spec
 
       - name: Build APK
         run: |
