@@ -14,38 +14,49 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip openjdk-11-jdk wget unzip git zlib1g-dev
+          sudo apt-get install -y python3-pip openjdk-11-jdk wget unzip git zlib1g-dev libssl-dev
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK and NDK
         run: |
+          # Setup Android SDK
           mkdir -p ~/android-sdk/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
           unzip cmdline-tools.zip -d ~/android-sdk/cmdline-tools
           mv ~/android-sdk/cmdline-tools/cmdline-tools ~/android-sdk/cmdline-tools/latest
+          
           yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk --licenses
-          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk "platform-tools" "build-tools;36.0.0" "platforms;android-33" "ndk;25.2.9519653"
+          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk "platform-tools" "build-tools;30.0.3" "platforms;android-31" "ndk;21.4.7075529"
+          
           echo "export ANDROID_SDK_ROOT=~/android-sdk" >> $GITHUB_ENV
-          echo "export ANDROID_NDK_HOME=~/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "export ANDROID_NDK_HOME=~/android-sdk/ndk/21.4.7075529" >> $GITHUB_ENV
           echo "export PATH=$PATH:~/android-sdk/cmdline-tools/latest/bin:~/android-sdk/platform-tools" >> $GITHUB_ENV
 
-      - name: Install Buildozer and configure
+      - name: Install Python-for-Android
         run: |
-          pip install buildozer cython==0.29.33
-
-      - name: Install python-for-android
-        run: |
-          git clone https://github.com/kivy/python-for-android.git
+          pip install --user python-for-android
+          git clone https://github.com/kivy/python-for-android
           cd python-for-android
-          python3 setup.py install
+          pip install .
+          cd ..
 
-      - name: Build APK
+      - name: Build APK with p4a
         run: |
-          export PATH=$PATH:~/android-sdk/build-tools/36.0.0
-          buildozer -v android clean
-          buildozer -v android debug
+          export PATH=$PATH:~/android-sdk/build-tools/30.0.3
+          p4a apk \
+            --private $(pwd) \
+            --package=org.yourdomain.waiterdashboard \
+            --name "Waiter Dashboard" \
+            --version 1.0 \
+            --bootstrap=sdl2 \
+            --requirements=python3,kivy,websockets,asyncio \
+            --ndk-api=21 \
+            --android-api=31 \
+            --ndk-dir=~/android-sdk/ndk/21.4.7075529 \
+            --sdk-dir=~/android-sdk \
+            --arch=armeabi-v7a
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: waiter-dashboard.apk
-          path: bin/*.apk
+          path: dist/*.apk
