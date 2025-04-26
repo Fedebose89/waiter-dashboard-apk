@@ -18,18 +18,20 @@ jobs:
 
       - name: Setup Android SDK
         run: |
+          mkdir -p ~/android-sdk
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d ~/android-sdk/cmdline-tools
+          mkdir -p ~/android-sdk/cmdline-tools/latest
+          mv ~/android-sdk/cmdline-tools/* ~/android-sdk/cmdline-tools/latest/
+          echo "export ANDROID_SDK_ROOT=~/android-sdk" >> $GITHUB_ENV
+          echo "export PATH=$PATH:~/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_ENV
+
+      - name: Accept licenses and install tools
+        run: |
           mkdir -p ~/.android
           touch ~/.android/repositories.cfg
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip -d ~/android-sdk
-          mv ~/android-sdk/cmdline-tools ~/android-sdk/latest
-          echo "export ANDROID_SDK_ROOT=~/android-sdk" >> $GITHUB_ENV
-          echo "export PATH=$PATH:~/android-sdk/latest/bin" >> $GITHUB_ENV
-
-      - name: Accept licenses
-        run: |
-          yes | ~/android-sdk/latest/bin/sdkmanager --licenses || true
-          ~/android-sdk/latest/bin/sdkmanager "platform-tools" "build-tools;36.0.0"
+          yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk --licenses
+          ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=~/android-sdk "platform-tools" "build-tools;36.0.0"
 
       - name: Install Buildozer
         run: pip install buildozer cython==0.29.33
